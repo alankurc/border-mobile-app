@@ -1,29 +1,48 @@
 {
   "expo": {
-    "name": "border-mobile-app",
-    "slug": "border-mobile-app",
+    "name": "Radio BRM",
+    "slug": "radio-borderetro-mobile-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#121212"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.borderetro.radio",
+      "icon": {
+        "dark": "./assets/icon-dark.png",
+        "light": "./assets/icon.png",
+        "tinted": "./assets/icon.png"
+      },
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "audio"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#121212"
       },
-      "edgeToEdgeEnabled": true
+      "package": "com.borderetro.radio"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c4c72f52-ac00-447a-8096-5fc4a6fe8e57"
+      }
     }
   }
 }
