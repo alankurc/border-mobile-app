@@ -1,34 +1,45 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
 import { useRadio } from './hooks/useRadio';
 import ContactView from './components/ContactView';
-import SplashScreen from './components/SplashScreen'; // Import custom splash
+import SplashScreen from './components/SplashScreen';
 import { State } from 'react-native-track-player';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts, Limelight_400Regular } from '@expo-google-fonts/limelight';
-import { Montserrat_400Regular, Montserrat_600SemiBold } from '@expo-google-fonts/montserrat';
-import * as ExpoSplashScreen from 'expo-splash-screen'; // To control native splash
+import {
+  Montserrat_400Regular,
+  Montserrat_600SemiBold,
+} from '@expo-google-fonts/montserrat';
+import * as ExpoSplashScreen from 'expo-splash-screen';
 
 // Keep native splash screen visible while we load resources
 ExpoSplashScreen.preventAutoHideAsync();
 
-// Simple Tab Navigation Component
 const TabButton = ({ title, isActive, onPress }) => (
   <TouchableOpacity
     style={[styles.tabButton, isActive && styles.activeTabButton]}
     onPress={onPress}
   >
-    <Text style={[styles.tabButtonText, isActive && styles.activeTabButtonText]}>
+    <Text
+      style={[styles.tabButtonText, isActive && styles.activeTabButtonText]}
+    >
       {title}
     </Text>
   </TouchableOpacity>
 );
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('radio'); // 'radio' | 'contact'
-  const { isSetup, isPlaying, togglePlayback, playerState } = useRadio();
+  const [activeTab, setActiveTab] = useState('radio');
+  const { isSetup, isPlaying, togglePlayback, playerState, trackTitle, trackArtist } = useRadio();
   const [appIsReady, setAppIsReady] = useState(false);
 
   let [fontsLoaded] = useFonts({
@@ -40,9 +51,7 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       if (fontsLoaded) {
-        // Build in a small delay (e.g. 2s) to let the user enjoy the animation
-        // or ensure everything is settled.
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
 
         setAppIsReady(true);
         await ExpoSplashScreen.hideAsync();
@@ -55,22 +64,30 @@ export default function App() {
     return <SplashScreen />;
   }
 
+  const renderTrackInfo = () => {
+    return (
+      <View style={styles.trackInfoContainer}>
+        <Text style={styles.trackTitle}>{trackTitle}</Text>
+        <Text style={styles.trackArtist}>{trackArtist}</Text>
+      </View>
+    );
+  };
+
   const renderContent = () => {
     if (activeTab === 'contact') {
       return <ContactView />;
     }
 
-    // Radio View
     return (
       <View style={styles.radioContainer}>
-        <Image
-          source={require('./assets/logo.png')}
-          style={styles.logo}
-        />
+        <Image source={require('./assets/logo.png')} style={styles.logo} />
         <View style={styles.statusContainer}>
           <Text style={styles.statusText}>
-            {playerState === State.Buffering ? 'Buffering...' :
-              playerState === State.Playing ? 'Estamos al aire' : 'Escuchanos!'}
+            {playerState === State.Buffering
+              ? 'Buffering...'
+              : playerState === State.Playing
+                ? renderTrackInfo()
+                : 'Escuchanos!'}
           </Text>
         </View>
 
@@ -84,7 +101,7 @@ export default function App() {
           ) : (
             <>
               <Ionicons
-                name={isPlaying ? "pause-circle" : "play-circle"}
+                name={isPlaying ? 'pause-circle' : 'play-circle'}
                 size={120}
                 color="#fff"
               />
@@ -100,12 +117,13 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView
+        style={styles.container}
+        edges={['top', 'left', 'right', 'bottom']}
+      >
         <StatusBar style="auto" />
 
-        <View style={styles.content}>
-          {renderContent()}
-        </View>
+        <View style={styles.content}>{renderContent()}</View>
 
         <View style={styles.tabBar}>
           <TabButton
@@ -132,7 +150,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  // Tab Bar Styles
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#1E1E1E',
@@ -153,13 +170,12 @@ const styles = StyleSheet.create({
   tabButtonText: {
     fontSize: 16,
     color: '#888',
-    fontFamily: 'Limelight_400Regular',
+    fontFamily: 'Montserrat_600SemiBold',
   },
   activeTabButtonText: {
     color: '#fff',
     fontWeight: 'normal',
   },
-  // Radio View Styles
   radioContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -195,5 +211,25 @@ const styles = StyleSheet.create({
     marginTop: 10,
     letterSpacing: 2,
     fontFamily: 'Limelight_400Regular',
+  },
+  trackTitle: {
+    fontSize: 24,
+    color: '#FFF',
+    marginBottom: 10,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    fontFamily: 'Limelight_400Regular',
+  },
+  trackArtist: {
+    fontSize: 18,
+    color: '#FFF',
+    marginBottom: 10,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    fontFamily: 'Montserrat_100Thin',
+  },
+  trackInfoContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
   },
 });

@@ -4,7 +4,7 @@ import TrackPlayer, {
     State,
     usePlaybackState,
     AppKilledPlaybackBehavior,
-    Event
+    Event,
 } from 'react-native-track-player';
 
 const STREAM_URL = 'https://miestacion.turadioonline.com.ar:7115/stream';
@@ -15,8 +15,10 @@ export const useRadio = () => {
     const [isPlaying, setIsPlaying] = useState(false);
 
     useEffect(() => {
-        // console.log("Player State:", playerState); // Debugging
-        if (playerState.state === State.Playing || playerState.state === State.Buffering) {
+        if (
+            playerState.state === State.Playing ||
+            playerState.state === State.Buffering
+        ) {
             setIsPlaying(true);
         } else {
             setIsPlaying(false);
@@ -28,17 +30,11 @@ export const useRadio = () => {
             await TrackPlayer.setupPlayer();
             await TrackPlayer.updateOptions({
                 android: {
-                    appKilledPlaybackBehavior: AppKilledPlaybackBehavior.StopPlaybackAndRemoveNotification,
+                    appKilledPlaybackBehavior:
+                        AppKilledPlaybackBehavior.StopPlaybackAndRemoveNotification,
                 },
-                capabilities: [
-                    Capability.Play,
-                    Capability.Pause,
-                    Capability.Stop,
-                ],
-                compactCapabilities: [
-                    Capability.Play,
-                    Capability.Pause,
-                ],
+                capabilities: [Capability.Play, Capability.Pause, Capability.Stop],
+                compactCapabilities: [Capability.Play, Capability.Pause],
                 notificationCapabilities: [
                     Capability.Play,
                     Capability.Pause,
@@ -48,9 +44,8 @@ export const useRadio = () => {
             await TrackPlayer.add({
                 id: 'radio-stream',
                 url: STREAM_URL,
-                title: 'Radio Borderetro',
+                title: 'Radio Border Retro Music',
                 artist: 'En Vivo',
-                // artwork: require('../assets/icon.png'), // Add artwork if available
                 contentType: 'audio/mpeg',
             });
 
@@ -73,7 +68,7 @@ export const useRadio = () => {
             await TrackPlayer.add({
                 id: 'radio-stream',
                 url: STREAM_URL,
-                title: 'Radio Borderetro',
+                title: 'Radio Border Retro Music',
                 artist: 'En Vivo',
                 contentType: 'audio/mpeg',
             });
@@ -87,10 +82,33 @@ export const useRadio = () => {
         }
     };
 
+
+    const [trackTitle, setTrackTitle] = useState('Estamos al aire');
+    const [trackArtist, setTrackArtist] = useState('En Vivo');
+
+    useEffect(() => {
+        let sub = null;
+
+        const listener = TrackPlayer.addEventListener(Event.PlaybackMetadataReceived, async (event) => {
+            if (event.title) {
+                setTrackTitle(event.title);
+            }
+            if (event.artist) {
+                setTrackArtist(event.artist);
+            }
+        });
+
+        return () => {
+            listener.remove();
+        };
+    }, []);
+
     return {
         isSetup,
         isPlaying,
         togglePlayback,
-        playerState: playerState.state
+        playerState: playerState.state,
+        trackTitle,
+        trackArtist,
     };
 };
