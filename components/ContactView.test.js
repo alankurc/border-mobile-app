@@ -5,40 +5,44 @@ import ContactView from '../components/ContactView';
 
 // Mock Mocks for Icons and Fonts
 jest.mock('@expo/vector-icons', () => ({
-    Ionicons: 'Ionicons',
+  Ionicons: 'Ionicons',
 }));
 jest.mock('expo-font', () => ({
-    useFonts: () => [true],
+  useFonts: () => [true],
 }));
 
 describe('<ContactView />', () => {
-    beforeAll(() => {
-        jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
-    });
+  beforeAll(() => {
+    jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+  });
 
-    test('renders all contact buttons', () => {
-        const { getByText } = render(<ContactView />);
+  test('renders all contact buttons', () => {
+    const { getByText } = render(<ContactView />);
 
-        expect(getByText('Instagram')).toBeTruthy();
-        expect(getByText('WhatsApp')).toBeTruthy();
-        expect(getByText('Facebook')).toBeTruthy();
-        expect(getByText('Conocé nuestra web')).toBeTruthy();
-        expect(getByText('Invitanos un cafecito')).toBeTruthy();
-    });
+    expect(getByText('Instagram')).toBeTruthy();
+    expect(getByText('WhatsApp')).toBeTruthy();
+    expect(getByText('Facebook')).toBeTruthy();
+    expect(getByText('Conocé nuestra web')).toBeTruthy();
+    expect(getByText('Invitanos un cafecito')).toBeTruthy();
+  });
 
-    test('opens Instagram link when pressed', () => {
-        const { getByText } = render(<ContactView />);
-        const button = getByText('Instagram');
+  test('opens Instagram link when pressed', () => {
+    const { getByText } = render(<ContactView />);
+    const button = getByText('Instagram');
 
-        fireEvent.press(button);
-        expect(Linking.openURL).toHaveBeenCalledWith('https://www.instagram.com/radioborderretromusic/');
-    });
+    fireEvent.press(button);
+    expect(Linking.openURL).toHaveBeenCalledWith(
+      'https://www.instagram.com/radioborderretromusic/',
+    );
+  });
 
-    test('opens WhatsApp link when pressed', () => {
-        const { getByText } = render(<ContactView />);
-        const button = getByText('WhatsApp');
+  test('opens WhatsApp link when pressed', () => {
+    const { getByText } = render(<ContactView />);
+    const button = getByText('WhatsApp');
 
-        fireEvent.press(button);
-        expect(Linking.openURL).toHaveBeenCalledWith(expect.stringContaining('https://wa.me/'));
-    });
+    fireEvent.press(button);
+    expect(Linking.openURL).toHaveBeenCalledWith(
+      expect.stringContaining('https://wa.me/'),
+    );
+  });
 });

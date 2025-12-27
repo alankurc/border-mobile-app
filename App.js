@@ -39,7 +39,14 @@ const TabButton = ({ title, isActive, onPress }) => (
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('radio');
-  const { isSetup, isPlaying, togglePlayback, playerState, trackTitle, trackArtist } = useRadio();
+  const {
+    isSetup,
+    isPlaying,
+    togglePlayback,
+    playerState,
+    trackTitle,
+    trackArtist,
+  } = useRadio();
   const [appIsReady, setAppIsReady] = useState(false);
 
   let [fontsLoaded] = useFonts({
