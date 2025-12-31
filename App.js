@@ -18,6 +18,7 @@ import { useFonts, Limelight_400Regular } from '@expo-google-fonts/limelight';
 import {
   Montserrat_400Regular,
   Montserrat_600SemiBold,
+  Montserrat_300Light,
 } from '@expo-google-fonts/montserrat';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 
@@ -46,6 +47,8 @@ export default function App() {
     playerState,
     trackTitle,
     trackArtist,
+    goLive,
+    isLive,
   } = useRadio();
   const [appIsReady, setAppIsReady] = useState(false);
 
@@ -53,6 +56,7 @@ export default function App() {
     Limelight_400Regular,
     Montserrat_400Regular,
     Montserrat_600SemiBold,
+    Montserrat_300Light,
   });
 
   useEffect(() => {
@@ -117,6 +121,19 @@ export default function App() {
               </Text>
             </>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.goLiveButton, isLive && styles.goLiveButtonDisabled]}
+          onPress={goLive}
+          disabled={isLive}
+        >
+          <View style={styles.goLiveContainer}>
+            <View style={[styles.redDot, isLive && styles.redDotDisabled]} />
+            <Text style={[styles.goLiveText, isLive && styles.goLiveTextDisabled]}>
+              IR AL VIVO
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
     );
@@ -223,20 +240,54 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#FFF',
     marginBottom: 10,
-    textAlign: 'center',
     paddingHorizontal: 20,
     fontFamily: 'Limelight_400Regular',
+    width: '40%',
   },
   trackArtist: {
     fontSize: 18,
     color: '#FFF',
     marginBottom: 10,
-    textAlign: 'center',
     paddingHorizontal: 20,
-    fontFamily: 'Montserrat_100Thin',
+    fontFamily: 'Montserrat_300Light',
+    width: '40%',
   },
   trackInfoContainer: {
     alignItems: 'center',
     marginBottom: 20,
+    width: '40%',
+  },
+  goLiveButton: {
+    marginTop: 30,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#333',
+    borderRadius: 20,
+  },
+  goLiveContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  redDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FF0000',
+    marginRight: 8,
+  },
+  goLiveText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontFamily: 'Montserrat_600SemiBold',
+    letterSpacing: 1,
+  },
+  goLiveButtonDisabled: {
+    opacity: 0.5,
+  },
+  redDotDisabled: {
+    backgroundColor: '#555',
+  },
+  goLiveTextDisabled: {
+    color: '#888',
   },
 });

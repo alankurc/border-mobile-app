@@ -103,10 +103,37 @@ export const useRadio = () => {
     };
   }, []);
 
+  const [isLive, setIsLive] = useState(true);
+
+  useEffect(() => {
+    if (playerState.state === State.Paused) {
+      setIsLive(false);
+    }
+  }, [playerState]);
+
+  const goLive = async () => {
+    try {
+      setIsLive(true);
+      await TrackPlayer.reset();
+      await TrackPlayer.add({
+        id: 'radio-stream',
+        url: STREAM_URL,
+        title: 'Radio Border Retro Music',
+        artist: 'En Vivo',
+        contentType: 'audio/mpeg',
+      });
+      await TrackPlayer.play();
+    } catch (error) {
+      console.error('Error going live:', error);
+    }
+  };
+
   return {
     isSetup,
     isPlaying,
     togglePlayback,
+    goLive,
+    isLive,
     playerState: playerState.state,
     trackTitle,
     trackArtist,
