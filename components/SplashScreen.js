@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Animated, Easing } from 'react-native';
 
 const SplashScreen = () => {
-  const spinValue = useRef(new Animated.Value(0)).current;
+  const [spinValue] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     // Infinite spinning animation

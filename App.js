@@ -9,10 +9,9 @@ import {
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
-import { useRadio } from './hooks/useRadio';
+import { useRadio, PlayerState } from './hooks/useRadio';
 import ContactView from './components/ContactView';
 import SplashScreen from './components/SplashScreen';
-import { State } from 'react-native-track-player';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts, Limelight_400Regular } from '@expo-google-fonts/limelight';
 import {
@@ -93,13 +92,15 @@ export default function App() {
       <View style={styles.radioContainer}>
         <Image source={require('./assets/logo.png')} style={styles.logo} />
         <View style={styles.statusContainer}>
-          <Text style={styles.statusText}>
-            {playerState === State.Buffering
-              ? 'Buffering...'
-              : playerState === State.Playing
-                ? renderTrackInfo()
+          {playerState === PlayerState.Playing ? (
+            renderTrackInfo()
+          ) : (
+            <Text style={styles.statusText}>
+              {playerState === PlayerState.Buffering
+                ? 'Buffering...'
                 : 'Escuchanos!'}
-          </Text>
+            </Text>
+          )}
         </View>
 
         <TouchableOpacity
@@ -242,7 +243,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingHorizontal: 20,
     fontFamily: 'Limelight_400Regular',
-    width: '40%',
+    textAlign: 'center',
   },
   trackArtist: {
     fontSize: 18,
@@ -250,12 +251,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingHorizontal: 20,
     fontFamily: 'Montserrat_300Light',
-    width: '40%',
+    textAlign: 'center',
   },
   trackInfoContainer: {
     alignItems: 'center',
-    marginBottom: 20,
-    width: '40%',
+    paddingHorizontal: 20,
   },
   goLiveButton: {
     marginTop: 30,
