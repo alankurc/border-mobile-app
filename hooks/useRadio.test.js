@@ -17,6 +17,7 @@ describe('useRadio Hook', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
     mockPlayer = {
       play: jest.fn(),
       pause: jest.fn(),
@@ -29,6 +30,7 @@ describe('useRadio Hook', () => {
       playing: false,
       isBuffering: false,
       isLoaded: true,
+      error: null,
     });
     setAudioModeAsync.mockResolvedValue(undefined);
     global.fetch = jest.fn(() =>
@@ -37,6 +39,10 @@ describe('useRadio Hook', () => {
         json: () => Promise.resolve({ songtitle: '' }),
       }),
     );
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   test('initializes correctly and sets up player', async () => {
@@ -61,6 +67,7 @@ describe('useRadio Hook', () => {
       playing: true,
       isBuffering: false,
       isLoaded: true,
+      error: null,
     });
     const { result } = renderHook(() => useRadio());
 
@@ -75,6 +82,7 @@ describe('useRadio Hook', () => {
       playing: true,
       isBuffering: false,
       isLoaded: true,
+      error: null,
     });
 
     const { result } = renderHook(() => useRadio());
@@ -84,6 +92,55 @@ describe('useRadio Hook', () => {
     });
 
     expect(mockPlayer.pause).toHaveBeenCalled();
+  });
+
+  test('handles stream error state and reconnects on togglePlayback', async () => {
+    useAudioPlayerStatus.mockReturnValue({
+      playing: false,
+      isBuffering: false,
+      isLoaded: false,
+      error: 'Network error',
+    });
+
+    const { result } = renderHook(() => useRadio());
+
+    await act(async () => {});
+
+    expect(result.current.playerState).toBe(PlayerState.Error);
+    expect(result.current.isPlaying).toBe(false);
+    expect(result.current.error).toBe('Network error');
+
+    await act(async () => {
+      await result.current.togglePlayback();
+    });
+
+    expect(mockPlayer.replace).toHaveBeenCalled();
+    expect(mockPlayer.play).toHaveBeenCalled();
+  });
+
+  test('cycles sleep timer and pauses playback when timer expires', async () => {
+    const { result } = renderHook(() => useRadio());
+
+    await act(async () => {
+      result.current.cycleSleepTimer();
+    });
+    expect(result.current.sleepTimerMinutes).toBe(15);
+    expect(result.current.sleepTimerRemaining).toBe(15 * 60);
+
+    await act(async () => {
+      result.current.setSleepTimer(1);
+    });
+    expect(result.current.sleepTimerRemaining).toBe(60);
+
+    for (let i = 0; i < 60; i++) {
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+    }
+
+    expect(mockPlayer.pause).toHaveBeenCalled();
+    expect(result.current.sleepTimerRemaining).toBeNull();
+    expect(result.current.sleepTimerMinutes).toBeNull();
   });
 
   test('updates track metadata from stream stats when playing', async () => {
@@ -97,6 +154,7 @@ describe('useRadio Hook', () => {
       playing: true,
       isBuffering: false,
       isLoaded: true,
+      error: null,
     });
 
     const { result } = renderHook(() => useRadio());

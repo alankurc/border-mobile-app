@@ -24,6 +24,13 @@ import * as ExpoSplashScreen from 'expo-splash-screen';
 // Keep native splash screen visible while we load resources
 ExpoSplashScreen.preventAutoHideAsync();
 
+const formatRemainingTime = (seconds) => {
+  if (seconds === null || seconds === undefined) return '';
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+};
+
 const TabButton = ({ title, isActive, onPress }) => (
   <TouchableOpacity
     style={[styles.tabButton, isActive && styles.activeTabButton]}
@@ -48,6 +55,8 @@ export default function App() {
     trackArtist,
     goLive,
     isLive,
+    sleepTimerRemaining,
+    cycleSleepTimer,
   } = useRadio();
   const [appIsReady, setAppIsReady] = useState(false);
 
@@ -83,6 +92,27 @@ export default function App() {
     );
   };
 
+  const renderStatus = () => {
+    if (playerState === PlayerState.Playing) {
+      return renderTrackInfo();
+    }
+    if (playerState === PlayerState.Error) {
+      return (
+        <View style={styles.trackInfoContainer}>
+          <Text style={styles.errorTitle}>Sin conexión al stream</Text>
+          <Text style={styles.trackArtist}>Tocá Reintentar para conectar</Text>
+        </View>
+      );
+    }
+    return (
+      <Text style={styles.statusText}>
+        {playerState === PlayerState.Buffering ? 'Buffering...' : 'Escuchanos!'}
+      </Text>
+    );
+  };
+
+  const isTimerActive = sleepTimerRemaining !== null;
+
   const renderContent = () => {
     if (activeTab === 'contact') {
       return <ContactView />;
@@ -91,17 +121,7 @@ export default function App() {
     return (
       <View style={styles.radioContainer}>
         <Image source={require('./assets/logo.png')} style={styles.logo} />
-        <View style={styles.statusContainer}>
-          {playerState === PlayerState.Playing ? (
-            renderTrackInfo()
-          ) : (
-            <Text style={styles.statusText}>
-              {playerState === PlayerState.Buffering
-                ? 'Buffering...'
-                : 'Escuchanos!'}
-            </Text>
-          )}
-        </View>
+        <View style={styles.statusContainer}>{renderStatus()}</View>
 
         <TouchableOpacity
           style={styles.controlContainer}
@@ -113,29 +133,70 @@ export default function App() {
           ) : (
             <>
               <Ionicons
-                name={isPlaying ? 'pause-circle' : 'play-circle'}
+                name={
+                  playerState === PlayerState.Error
+                    ? 'refresh-circle'
+                    : isPlaying
+                      ? 'pause-circle'
+                      : 'play-circle'
+                }
                 size={120}
                 color="#fff"
               />
               <Text style={styles.controlText}>
-                {isPlaying ? 'PAUSA' : 'PLAY'}
+                {playerState === PlayerState.Error
+                  ? 'REINTENTAR'
+                  : isPlaying
+                    ? 'PAUSA'
+                    : 'PLAY'}
               </Text>
             </>
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.goLiveButton, isLive && styles.goLiveButtonDisabled]}
-          onPress={goLive}
-          disabled={isLive}
-        >
-          <View style={styles.goLiveContainer}>
-            <View style={[styles.redDot, isLive && styles.redDotDisabled]} />
-            <Text style={[styles.goLiveText, isLive && styles.goLiveTextDisabled]}>
-              IR AL VIVO
-            </Text>
-          </View>
-        </TouchableOpacity>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={[styles.goLiveButton, isLive && styles.goLiveButtonDisabled]}
+            onPress={goLive}
+            disabled={isLive}
+          >
+            <View style={styles.goLiveContainer}>
+              <View style={[styles.redDot, isLive && styles.redDotDisabled]} />
+              <Text
+                style={[styles.goLiveText, isLive && styles.goLiveTextDisabled]}
+              >
+                IR AL VIVO
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.timerButton,
+              isTimerActive && styles.timerButtonActive,
+            ]}
+            onPress={cycleSleepTimer}
+          >
+            <View style={styles.goLiveContainer}>
+              <Ionicons
+                name={isTimerActive ? 'moon' : 'moon-outline'}
+                size={18}
+                color={isTimerActive ? '#FFD54F' : '#FFF'}
+                style={styles.timerIcon}
+              />
+              <Text
+                style={[
+                  styles.goLiveText,
+                  isTimerActive && styles.timerTextActive,
+                ]}
+              >
+                {isTimerActive
+                  ? formatRemainingTime(sleepTimerRemaining)
+                  : 'SLEEP'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -146,7 +207,7 @@ export default function App() {
         style={styles.container}
         edges={['top', 'left', 'right', 'bottom']}
       >
-        <StatusBar style="auto" />
+        <StatusBar style="light" />
 
         <View style={styles.content}>{renderContent()}</View>
 
@@ -225,6 +286,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     fontFamily: 'Limelight_400Regular',
   },
+  errorTitle: {
+    fontSize: 22,
+    color: '#FF5252',
+    marginBottom: 8,
+    paddingHorizontal: 20,
+    fontFamily: 'Montserrat_600SemiBold',
+    textAlign: 'center',
+  },
   controlContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -257,12 +326,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
   },
-  goLiveButton: {
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 30,
+    gap: 12,
+  },
+  goLiveButton: {
     paddingVertical: 10,
     paddingHorizontal: 20,
     backgroundColor: '#333',
     borderRadius: 20,
+  },
+  timerButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#333',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  timerButtonActive: {
+    borderColor: '#FFD54F',
+    backgroundColor: '#2A2416',
+  },
+  timerIcon: {
+    marginRight: 6,
+  },
+  timerTextActive: {
+    color: '#FFD54F',
   },
   goLiveContainer: {
     flexDirection: 'row',

@@ -36,7 +36,7 @@ const ContactView = () => {
 
       <TouchableOpacity
         style={[styles.button, styles.whatsapp]}
-        onPress={() => openLink('https://wa.me/5401134648486?text=Hola!')}
+        onPress={() => openLink('https://wa.me/5491134648486?text=Hola!')}
       >
         <Ionicons
           name="logo-whatsapp"

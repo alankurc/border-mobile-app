@@ -42,7 +42,7 @@ describe('<ContactView />', () => {
 
     fireEvent.press(button);
     expect(Linking.openURL).toHaveBeenCalledWith(
-      expect.stringContaining('https://wa.me/'),
+      'https://wa.me/5491134648486?text=Hola!',
     );
   });
 });

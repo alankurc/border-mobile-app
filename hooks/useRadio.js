@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   useAudioPlayer,
   useAudioPlayerStatus,
@@ -9,10 +9,13 @@ const STREAM_URL = 'https://miestacion.turadioonline.com.ar:7115/stream';
 const STATS_URL =
   'https://miestacion.turadioonline.com.ar:7115/stats?sid=1&json=1';
 
+export const SLEEP_TIMER_OPTIONS = [15, 30, 60];
+
 export const PlayerState = {
   Playing: 'playing',
   Paused: 'paused',
   Buffering: 'buffering',
+  Error: 'error',
   None: 'none',
 };
 
@@ -25,15 +28,20 @@ export const useRadio = () => {
   const [trackArtist, setTrackArtist] = useState('En Vivo');
   const [isLive, setIsLive] = useState(true);
   const [hasPlayed, setHasPlayed] = useState(false);
+  const [sleepTimerMinutes, setSleepTimerMinutes] = useState(null);
+  const [sleepTimerRemaining, setSleepTimerRemaining] = useState(null);
 
-  const isPlaying = Boolean(status?.playing || status?.isBuffering);
-  const playerState = status?.isBuffering
-    ? PlayerState.Buffering
-    : status?.playing
-      ? PlayerState.Playing
-      : hasPlayed
-        ? PlayerState.Paused
-        : PlayerState.None;
+  const hasError = Boolean(status?.error);
+  const isPlaying = !hasError && Boolean(status?.playing || status?.isBuffering);
+  const playerState = hasError
+    ? PlayerState.Error
+    : status?.isBuffering
+      ? PlayerState.Buffering
+      : status?.playing
+        ? PlayerState.Playing
+        : hasPlayed
+          ? PlayerState.Paused
+          : PlayerState.None;
 
   useEffect(() => {
     let mounted = true;
@@ -106,7 +114,55 @@ export const useRadio = () => {
     };
   }, [status?.playing, player]);
 
+  useEffect(() => {
+    if (sleepTimerRemaining === null) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (sleepTimerRemaining <= 1) {
+        player.pause();
+        setIsLive(false);
+        setSleepTimerMinutes(null);
+        setSleepTimerRemaining(null);
+      } else {
+        setSleepTimerRemaining(sleepTimerRemaining - 1);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [sleepTimerRemaining, player]);
+
+  const setSleepTimer = useCallback((minutes) => {
+    if (!minutes || minutes <= 0) {
+      setSleepTimerMinutes(null);
+      setSleepTimerRemaining(null);
+    } else {
+      setSleepTimerMinutes(minutes);
+      setSleepTimerRemaining(minutes * 60);
+    }
+  }, []);
+
+  const cycleSleepTimer = useCallback(() => {
+    const currentIndex = SLEEP_TIMER_OPTIONS.indexOf(sleepTimerMinutes);
+    if (currentIndex === -1) {
+      setSleepTimer(SLEEP_TIMER_OPTIONS[0]);
+    } else if (currentIndex === SLEEP_TIMER_OPTIONS.length - 1) {
+      setSleepTimer(null);
+    } else {
+      setSleepTimer(SLEEP_TIMER_OPTIONS[currentIndex + 1]);
+    }
+  }, [sleepTimerMinutes, setSleepTimer]);
+
   const togglePlayback = async () => {
+    if (hasError) {
+      setIsLive(true);
+      setHasPlayed(true);
+      player.replace(STREAM_URL);
+      player.play();
+      return;
+    }
+
     if (status?.playing) {
       player.pause();
       setHasPlayed(true);
@@ -135,7 +191,12 @@ export const useRadio = () => {
     goLive,
     isLive,
     playerState,
+    error: status?.error || null,
     trackTitle,
     trackArtist,
+    sleepTimerMinutes,
+    sleepTimerRemaining,
+    setSleepTimer,
+    cycleSleepTimer,
   };
 };
