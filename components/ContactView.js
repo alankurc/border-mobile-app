@@ -91,6 +91,21 @@ const ContactView = () => {
         />
         <Text style={styles.buttonText}>Invitanos un cafecito</Text>
       </TouchableOpacity>
+
+      <View style={styles.separator} />
+
+      <TouchableOpacity
+        style={[styles.button, styles.website]}
+        onPress={() => openLink('https://someonevision.com/')}
+      >
+        <Ionicons
+          name="globe-outline"
+          size={24}
+          color="#FFF"
+          style={styles.icon}
+        />
+        <Text style={styles.buttonText}>Web del Desarrollador</Text>
+      </TouchableOpacity>
     </View>
   );
 };

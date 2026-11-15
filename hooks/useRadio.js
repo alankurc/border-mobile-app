@@ -32,7 +32,8 @@ export const useRadio = () => {
   const [sleepTimerRemaining, setSleepTimerRemaining] = useState(null);
 
   const hasError = Boolean(status?.error);
-  const isPlaying = !hasError && Boolean(status?.playing || status?.isBuffering);
+  const isPlaying =
+    !hasError && Boolean(status?.playing || status?.isBuffering);
   const playerState = hasError
     ? PlayerState.Error
     : status?.isBuffering

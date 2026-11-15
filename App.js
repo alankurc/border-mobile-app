@@ -129,7 +129,12 @@ export default function App() {
           <Animated.View
             style={[
               styles.livePulseDot,
-              { opacity: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) },
+              {
+                opacity: pulseAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.4, 1],
+                }),
+              },
             ]}
           />
           <Text style={styles.trackArtist}>{trackArtist}</Text>

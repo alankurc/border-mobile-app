@@ -21,9 +21,7 @@
         "tinted": "./assets/icon.png"
       },
       "infoPlist": {
-        "UIBackgroundModes": [
-          "audio"
-        ]
+        "UIBackgroundModes": ["audio"]
       }
     },
     "android": {
