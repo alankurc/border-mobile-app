@@ -36,7 +36,7 @@ const ContactView = () => {
 
       <TouchableOpacity
         style={[styles.button, styles.whatsapp]}
-        onPress={() => openLink('https://wa.me/5401134648486?text=Hola!')}
+        onPress={() => openLink('https://wa.me/5491134648486?text=Hola!')}
       >
         <Ionicons
           name="logo-whatsapp"
@@ -90,6 +90,21 @@ const ContactView = () => {
           style={styles.icon}
         />
         <Text style={styles.buttonText}>Invitanos un cafecito</Text>
+      </TouchableOpacity>
+
+      <View style={styles.separator} />
+
+      <TouchableOpacity
+        style={[styles.button, styles.website]}
+        onPress={() => openLink('https://someonevision.com/')}
+      >
+        <Ionicons
+          name="globe-outline"
+          size={24}
+          color="#FFF"
+          style={styles.icon}
+        />
+        <Text style={styles.buttonText}>Web del Desarrollador</Text>
       </TouchableOpacity>
     </View>
   );

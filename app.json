@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -21,9 +21,7 @@
         "tinted": "./assets/icon.png"
       },
       "infoPlist": {
-        "UIBackgroundModes": [
-          "audio"
-        ]
+        "UIBackgroundModes": ["audio"]
       }
     },
     "android": {
@@ -37,7 +35,13 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": true
+        }
+      ]
     ],
     "extra": {
       "eas": {

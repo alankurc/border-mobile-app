@@ -2,8 +2,6 @@ import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import App from './App';
 
-// ... (mocks stay the same)
-
 describe('<App />', () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -22,18 +20,21 @@ describe('<App />', () => {
   });
 });
 
-// Mock React Native Track Player
-jest.mock('react-native-track-player', () => ({
-  Capability: {},
-  State: {},
-  Event: {},
-  usePlaybackState: () => ({ state: 'None' }),
-  setupPlayer: jest.fn(),
-  updateOptions: jest.fn(),
-  add: jest.fn(),
-  addEventListener: jest.fn(() => ({ remove: jest.fn() })),
-  getActiveTrackIndex: jest.fn(),
-  getPlaybackState: jest.fn(),
+// Mock Expo Audio
+jest.mock('expo-audio', () => ({
+  useAudioPlayer: jest.fn(() => ({
+    play: jest.fn(),
+    pause: jest.fn(),
+    replace: jest.fn(),
+    setActiveForLockScreen: jest.fn(),
+    updateLockScreenMetadata: jest.fn(),
+  })),
+  useAudioPlayerStatus: jest.fn(() => ({
+    playing: false,
+    isBuffering: false,
+    isLoaded: true,
+  })),
+  setAudioModeAsync: jest.fn(() => Promise.resolve()),
 }));
 
 // Mock Expo Fonts
@@ -45,6 +46,7 @@ jest.mock('@expo-google-fonts/limelight', () => ({
 jest.mock('@expo-google-fonts/montserrat', () => ({
   Montserrat_400Regular: 'Montserrat_400Regular',
   Montserrat_600SemiBold: 'Montserrat_600SemiBold',
+  Montserrat_300Light: 'Montserrat_300Light',
 }));
 
 // Mock Splash Screen
@@ -55,7 +57,8 @@ jest.mock('expo-splash-screen', () => ({
 
 jest.mock('./components/SplashScreen', () => {
   const { View } = require('react-native');
-  return () => <View testID="mock-splash-screen" />;
+  const MockSplashScreen = () => <View testID="mock-splash-screen" />;
+  return MockSplashScreen;
 });
 
 // Mock Vector Icons

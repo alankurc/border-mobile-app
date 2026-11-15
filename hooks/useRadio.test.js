@@ -1,66 +1,89 @@
 import { renderHook, act } from '@testing-library/react-native';
-import { useRadio } from '../hooks/useRadio';
-import TrackPlayer, { State, Event } from 'react-native-track-player';
+import { useRadio, PlayerState } from '../hooks/useRadio';
+import {
+  useAudioPlayer,
+  useAudioPlayerStatus,
+  setAudioModeAsync,
+} from 'expo-audio';
 
-// Mock TrackPlayer methods and constants
-jest.mock('react-native-track-player', () => ({
-  Capability: {
-    Play: 'Play',
-    Pause: 'Pause',
-    Stop: 'Stop',
-  },
-  AppKilledPlaybackBehavior: {
-    StopPlaybackAndRemoveNotification: 'StopPlaybackAndRemoveNotification',
-  },
-  State: {
-    Playing: 'playing',
-    Paused: 'paused',
-    Buffering: 'buffering',
-    None: 'none',
-  },
-  Event: {
-    PlaybackMetadataReceived: 'playback-metadata-received',
-  },
-  setupPlayer: jest.fn(),
-  updateOptions: jest.fn(),
-  add: jest.fn(),
-  play: jest.fn(),
-  pause: jest.fn(),
-  getActiveTrackIndex: jest.fn(),
-  getPlaybackState: jest.fn(),
-  usePlaybackState: jest.fn(),
-  addEventListener: jest.fn(() => ({ remove: jest.fn() })),
+jest.mock('expo-audio', () => ({
+  useAudioPlayer: jest.fn(),
+  useAudioPlayerStatus: jest.fn(),
+  setAudioModeAsync: jest.fn(),
 }));
 
 describe('useRadio Hook', () => {
+  let mockPlayer;
+
   beforeEach(() => {
     jest.clearAllMocks();
-    TrackPlayer.usePlaybackState.mockReturnValue({ state: State.None });
+    jest.useFakeTimers();
+    mockPlayer = {
+      play: jest.fn(),
+      pause: jest.fn(),
+      replace: jest.fn(),
+      setActiveForLockScreen: jest.fn(),
+      updateLockScreenMetadata: jest.fn(),
+    };
+    useAudioPlayer.mockReturnValue(mockPlayer);
+    useAudioPlayerStatus.mockReturnValue({
+      playing: false,
+      isBuffering: false,
+      isLoaded: true,
+      error: null,
+    });
+    setAudioModeAsync.mockResolvedValue(undefined);
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ songtitle: '' }),
+      }),
+    );
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   test('initializes correctly and sets up player', async () => {
     const { result } = renderHook(() => useRadio());
 
-    expect(result.current.isSetup).toBe(false);
-
     await act(async () => {});
 
-    expect(TrackPlayer.setupPlayer).toHaveBeenCalled();
-    expect(TrackPlayer.add).toHaveBeenCalled();
+    expect(setAudioModeAsync).toHaveBeenCalledWith({
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
+      interruptionMode: 'doNotMix',
+    });
+    expect(mockPlayer.setActiveForLockScreen).toHaveBeenCalledWith(true, {
+      title: 'Radio Border Retro Music',
+      artist: 'En Vivo',
+    });
     expect(result.current.isSetup).toBe(true);
   });
 
-  test('reflects isPlaying state when player is playing', () => {
-    TrackPlayer.usePlaybackState.mockReturnValue({ state: State.Playing });
+  test('reflects isPlaying state when player is playing', async () => {
+    useAudioPlayerStatus.mockReturnValue({
+      playing: true,
+      isBuffering: false,
+      isLoaded: true,
+      error: null,
+    });
     const { result } = renderHook(() => useRadio());
 
+    await act(async () => {});
+
     expect(result.current.isPlaying).toBe(true);
+    expect(result.current.playerState).toBe(PlayerState.Playing);
   });
 
   test('toggles playback from playing to paused', async () => {
-    TrackPlayer.usePlaybackState.mockReturnValue({ state: State.Playing });
-    TrackPlayer.getPlaybackState.mockResolvedValue({ state: State.Playing });
-    TrackPlayer.getActiveTrackIndex.mockResolvedValue(0);
+    useAudioPlayerStatus.mockReturnValue({
+      playing: true,
+      isBuffering: false,
+      isLoaded: true,
+      error: null,
+    });
 
     const { result } = renderHook(() => useRadio());
 
@@ -68,27 +91,93 @@ describe('useRadio Hook', () => {
       await result.current.togglePlayback();
     });
 
-    expect(TrackPlayer.pause).toHaveBeenCalled();
+    expect(mockPlayer.pause).toHaveBeenCalled();
   });
 
-  test('updates track metadata when event is received', async () => {
-    let listenerCallback;
-    TrackPlayer.addEventListener.mockImplementation((event, callback) => {
-      if (event === Event.PlaybackMetadataReceived) {
-        listenerCallback = callback;
-      }
-      return { remove: jest.fn() };
+  test('handles stream error state and reconnects on togglePlayback', async () => {
+    useAudioPlayerStatus.mockReturnValue({
+      playing: false,
+      isBuffering: false,
+      isLoaded: false,
+      error: 'Network error',
     });
 
     const { result } = renderHook(() => useRadio());
 
+    await act(async () => {});
+
+    expect(result.current.playerState).toBe(PlayerState.Error);
+    expect(result.current.isPlaying).toBe(false);
+    expect(result.current.error).toBe('Network error');
+
     await act(async () => {
-      if (listenerCallback) {
-        listenerCallback({ title: 'New Song', artist: 'New Artist' });
-      }
+      await result.current.togglePlayback();
     });
+
+    expect(mockPlayer.replace).toHaveBeenCalled();
+    expect(mockPlayer.play).toHaveBeenCalled();
+  });
+
+  test('cycles sleep timer and pauses playback when timer expires', async () => {
+    const { result } = renderHook(() => useRadio());
+
+    await act(async () => {
+      result.current.cycleSleepTimer();
+    });
+    expect(result.current.sleepTimerMinutes).toBe(15);
+    expect(result.current.sleepTimerRemaining).toBe(15 * 60);
+
+    await act(async () => {
+      result.current.setSleepTimer(1);
+    });
+    expect(result.current.sleepTimerRemaining).toBe(60);
+
+    for (let i = 0; i < 60; i++) {
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+    }
+
+    expect(mockPlayer.pause).toHaveBeenCalled();
+    expect(result.current.sleepTimerRemaining).toBeNull();
+    expect(result.current.sleepTimerMinutes).toBeNull();
+  });
+
+  test('updates track metadata from stream stats when playing', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ songtitle: 'New Artist - New Song' }),
+      }),
+    );
+    useAudioPlayerStatus.mockReturnValue({
+      playing: true,
+      isBuffering: false,
+      isLoaded: true,
+      error: null,
+    });
+
+    const { result } = renderHook(() => useRadio());
+
+    await act(async () => {});
 
     expect(result.current.trackTitle).toBe('New Song');
     expect(result.current.trackArtist).toBe('New Artist');
+    expect(mockPlayer.updateLockScreenMetadata).toHaveBeenCalledWith({
+      title: 'New Song',
+      artist: 'New Artist',
+    });
+  });
+
+  test('goLive reloads stream and starts playing', async () => {
+    const { result } = renderHook(() => useRadio());
+
+    await act(async () => {
+      await result.current.goLive();
+    });
+
+    expect(mockPlayer.replace).toHaveBeenCalled();
+    expect(mockPlayer.play).toHaveBeenCalled();
+    expect(result.current.isLive).toBe(true);
   });
 });
