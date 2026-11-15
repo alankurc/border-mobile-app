@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  Animated,
+  Easing,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
@@ -59,6 +61,7 @@ export default function App() {
     cycleSleepTimer,
   } = useRadio();
   const [appIsReady, setAppIsReady] = useState(false);
+  const [pulseAnim] = useState(() => new Animated.Value(0));
 
   let [fontsLoaded] = useFonts({
     Limelight_400Regular,
@@ -70,7 +73,7 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       if (fontsLoaded) {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         setAppIsReady(true);
         await ExpoSplashScreen.hideAsync();
@@ -79,15 +82,58 @@ export default function App() {
     prepare();
   }, [fontsLoaded]);
 
+  useEffect(() => {
+    if (playerState === PlayerState.Playing) {
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1200,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 0,
+            duration: 1200,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      );
+      loop.start();
+      return () => loop.stop();
+    } else {
+      pulseAnim.setValue(0);
+    }
+  }, [playerState, pulseAnim]);
+
   if (!appIsReady) {
     return <SplashScreen />;
   }
+
+  const pulseScale = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.18],
+  });
+
+  const pulseOpacity = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.15, 0.45],
+  });
 
   const renderTrackInfo = () => {
     return (
       <View style={styles.trackInfoContainer}>
         <Text style={styles.trackTitle}>{trackTitle}</Text>
-        <Text style={styles.trackArtist}>{trackArtist}</Text>
+        <View style={styles.artistRow}>
+          <Animated.View
+            style={[
+              styles.livePulseDot,
+              { opacity: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) },
+            ]}
+          />
+          <Text style={styles.trackArtist}>{trackArtist}</Text>
+        </View>
       </View>
     );
   };
@@ -132,17 +178,30 @@ export default function App() {
             <ActivityIndicator size="large" color="#fff" />
           ) : (
             <>
-              <Ionicons
-                name={
-                  playerState === PlayerState.Error
-                    ? 'refresh-circle'
-                    : isPlaying
-                      ? 'pause-circle'
-                      : 'play-circle'
-                }
-                size={120}
-                color="#fff"
-              />
+              <View style={styles.playButtonWrapper}>
+                {playerState === PlayerState.Playing && (
+                  <Animated.View
+                    style={[
+                      styles.pulseHalo,
+                      {
+                        transform: [{ scale: pulseScale }],
+                        opacity: pulseOpacity,
+                      },
+                    ]}
+                  />
+                )}
+                <Ionicons
+                  name={
+                    playerState === PlayerState.Error
+                      ? 'refresh-circle'
+                      : isPlaying
+                        ? 'pause-circle'
+                        : 'play-circle'
+                  }
+                  size={120}
+                  color="#fff"
+                />
+              </View>
               <Text style={styles.controlText}>
                 {playerState === PlayerState.Error
                   ? 'REINTENTAR'
@@ -241,8 +300,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E1E1E',
     borderTopWidth: 1,
     borderTopColor: '#333',
-    paddingBottom: 20, // For iPhone X+
-    paddingTop: 10,
+    paddingTop: 6,
+    paddingBottom: 4,
   },
   tabButton: {
     flex: 1,
@@ -299,6 +358,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 20,
   },
+  playButtonWrapper: {
+    width: 130,
+    height: 130,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pulseHalo: {
+    position: 'absolute',
+    width: 116,
+    height: 116,
+    borderRadius: 58,
+    backgroundColor: '#8C5230',
+  },
   controlText: {
     color: '#fff',
     fontSize: 24,
@@ -314,11 +386,23 @@ const styles = StyleSheet.create({
     fontFamily: 'Limelight_400Regular',
     textAlign: 'center',
   },
+  artistRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    paddingHorizontal: 20,
+  },
+  livePulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF0000',
+    marginRight: 8,
+  },
   trackArtist: {
     fontSize: 18,
     color: '#FFF',
-    marginBottom: 10,
-    paddingHorizontal: 20,
     fontFamily: 'Montserrat_300Light',
     textAlign: 'center',
   },
